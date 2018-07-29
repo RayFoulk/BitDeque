@@ -1,32 +1,25 @@
-//-------------------------------------------------|
-// Copyright (c) 2016 Raymond M. Foulk IV
+//------------------------------------------------------------------------|
+// Copyright (c) 2016 through 2018 by Raymond M. Foulk IV
 //
-// Permission is hereby granted, free of charge, to
-// any person obtaining a copy of this software and
-// associated documentation files (the "Software"),
-// to deal in the Software without restriction,
-// including without limitation the rights to use,
-// copy, modify, merge, publish, distribute,
-// sublicense, and/or sell copies of the Software,
-// and to permit persons to whom the Software is
-// furnished to do so, subject to the following
-// conditions:
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to
+// permit persons to whom the Software is furnished to do so, subject to
+// the following conditions:
 //
-// The above copyright notice and this permission
-// notice shall be included in all copies or
-// substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT
-// WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-// INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-// AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-// OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//-------------------------------------------------|
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+//------------------------------------------------------------------------|
 
 #pragma once
 
@@ -38,9 +31,9 @@ using namespace std;
 namespace rmf
 {
 
-//--52---------------------------------------------|
-// Container class for managing a contiguous block
-// of bits within an unsigned integer.
+//------------------------------------------------------------------------|
+// Container class for managing a contiguous block of bits within an
+// unsigned integer.
 class BitBlock
 {  
 public:
@@ -48,22 +41,19 @@ public:
     // Some important size constants.
     // Assumption is 8 bits per byte
     static const int8_t BITS_PER_BYTE = 8;
-    static const int8_t MAX_NUM_BITS =
-        BITS_PER_BYTE * sizeof(uint64_t);
+    static const int8_t MAX_NUM_BITS = BITS_PER_BYTE * sizeof(uint64_t);
 
     // Constructors, Destructor
     BitBlock();
     BitBlock(const BitBlock & block);
-    BitBlock(const uint64_t data,
-             const int8_t size);
+    BitBlock(const uint64_t data, const int8_t size);
     virtual ~BitBlock();
 
     // These just overwrite the whole block, with
     // exception of the base address, starting at
     // offset zero (LSB)
     void SetBlock(const BitBlock & block);
-    void SetBlock(const uint64_t data,
-                  const int8_t size);
+    void SetBlock(const uint64_t data, const int8_t size);
     void Clear() { SetBlock(0, 0); }
 
     // Get bits at bit offset. This will be used to
@@ -74,11 +64,9 @@ public:
     // Replace (set) bits at bit offset.  This will
     // not alter the size of the block, but only
     // overwrite  bits currently allocated.
-    BitBlock SetBits(const BitBlock & block,
-                     const int8_t offset);
-    BitBlock SetBits(const uint64_t data,
-                     const int8_t size,
-                     const int8_t offset);
+    BitBlock SetBits(const BitBlock & block, const int8_t offset);
+    BitBlock SetBits(const uint64_t data, const int8_t size,
+    		const int8_t offset);
 
     // Get raw data and base address
     uint64_t GetData() const;
@@ -90,15 +78,13 @@ public:
     bool IsEmpty() const;
     bool IsFull() const;
 
-//--52---------------------------------------------|
     // LSB right-most bits are 'Back'.  This pushes
     // the caller's bits into the right end of the
     // block, shifting existing bits to the left.
-    // Bits that  overflow off the left end are
+    // Bits that overflow off the left end are
     // returned
     BitBlock PushLow(const BitBlock & block);
-    BitBlock PushLow(const uint64_t data,
-                     const int8_t size);
+    BitBlock PushLow(const uint64_t data, const int8_t size);
 
     // This pops LSBs off the right, shifting
     // MSBs 'down' and decreasing _size
@@ -112,8 +98,7 @@ public:
     // 'overflow' off the right end are
     // returned.
     BitBlock PushHigh(const BitBlock & block);
-    BitBlock PushHigh(const uint64_t data,
-                      const int8_t size);
+    BitBlock PushHigh(const uint64_t data, const int8_t size);
 
     // This pops MSBs off the left.  No
     // shifting to accommodate should ever
@@ -147,8 +132,7 @@ public:
     BitBlock & operator=(const uint64_t data);
     BitBlock & operator=(const uint32_t data);
 
-    friend ostream & operator<<(ostream & os,
-            const BitBlock & block);
+    friend ostream & operator<<(ostream & os, const BitBlock & block);
 
 private:
               

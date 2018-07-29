@@ -20,24 +20,3 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //------------------------------------------------------------------------|
-
-// TODO: LogMem()
-// TODO: LeftShiftMem(), RightShiftMem()
-// TODO: DoubleDabble()
-
-#include <stdint.h>
-
-namespace rmf
-{
-
-namespace utils
-{
-
-
-
-
-
-
-} // utils
-
-} // rmf

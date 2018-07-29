@@ -1,32 +1,25 @@
-//-------------------------------------------------|
-// Copyright (c) 2016 Raymond M. Foulk IV
+//------------------------------------------------------------------------|
+// Copyright (c) 2016 through 2018 by Raymond M. Foulk IV
 //
-// Permission is hereby granted, free of charge, to
-// any person obtaining a copy of this software and
-// associated documentation files (the "Software"),
-// to deal in the Software without restriction,
-// including without limitation the rights to use,
-// copy, modify, merge, publish, distribute,
-// sublicense, and/or sell copies of the Software,
-// and to permit persons to whom the Software is
-// furnished to do so, subject to the following
-// conditions:
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to
+// permit persons to whom the Software is furnished to do so, subject to
+// the following conditions:
 //
-// The above copyright notice and this permission
-// notice shall be included in all copies or
-// substantial portions of the Software.
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT
-// WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-// INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-// AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-// OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//-------------------------------------------------|
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+// SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+//------------------------------------------------------------------------|
 
 #include "Log.h"
 #include "BitBlock.h"
@@ -36,7 +29,7 @@
 namespace rmf
 {
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 BitBlock::BitBlock()
 : _data(0)
 , _size(0)
@@ -45,44 +38,40 @@ BitBlock::BitBlock()
 {
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 BitBlock::BitBlock(const BitBlock & block)
 : BitBlock()
 {
     SetBlock(block);
 }
 
-//--52---------------------------------------------|
-BitBlock::BitBlock(const uint64_t data,
-                   const int8_t size)
+//------------------------------------------------------------------------|
+BitBlock::BitBlock(const uint64_t data, const int8_t size)
 : BitBlock()
 {
     SetBlock(data, size);
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 BitBlock::~BitBlock()
 {
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 void BitBlock::SetBlock(const BitBlock & block)
 {
     SetBlock(block.GetData(), block.GetSize());
 }
 
-//--52---------------------------------------------|
-// Cannot just assume caller's data is clean (zero)
-// above (left of) the size argument. so need to
-// mask higher bits to zero to facilitate later
+//------------------------------------------------------------------------|
+// Cannot just assume caller's data is clean (zero) above (left of) the
+// size argument. so need to mask higher bits to zero to facilitate later
 // bitwise operations.
-void BitBlock::SetBlock(const uint64_t data,
-                        const int8_t size)
+void BitBlock::SetBlock(const uint64_t data, const int8_t size)
 {
-    // Coerce the caller's size into range which
-    // will allow block to be initialized easily
-    // and some higher level operations to be
-    // simpler. Also account for special case of 64
+    // Coerce the caller's size into range which will allow block to be
+	// initialized easily and some higher level operations to be simpler.
+	//Also account for special case of 64
     if (size >= MAX_NUM_BITS)
     {
         _data = data;
@@ -103,48 +92,38 @@ void BitBlock::SetBlock(const uint64_t data,
     }
 }
 
-//--52---------------------------------------------|
-BitBlock BitBlock::GetBits(const int8_t offset)
-        const
+//------------------------------------------------------------------------|
+BitBlock BitBlock::GetBits(const int8_t offset) const
 {
     // TODO: Need ctor with addr initializer?
-    // TODO: Since we may have ptr to next
-    // block, we could make more of an effort
-    // right here to attempt to return a
-    // specified number of bits.  TBD
-    return BitBlock(_data >> offset,
-                    _size - offset);
-                 // _addr + offset
+    // TODO: Since we may have ptr to next block, we could make more of an
+	// effort right here to attempt to return a specified number of bits.
+	// TBD
+    return BitBlock(_data >> offset, _size - offset); // _addr + offset
 }
 
-//--52---------------------------------------------|
-BitBlock BitBlock::SetBits(const BitBlock & block,
-                           const int8_t offset)
+//------------------------------------------------------------------------|
+BitBlock BitBlock::SetBits(const BitBlock & block, const int8_t offset)
 {
-    return SetBits(block.GetData(),
-                   block.GetSize(),
-                   offset);
+    return SetBits(block.GetData(), block.GetSize(), offset);
 }
 
-//--52---------------------------------------------|
-// Overwrite data bits at offset with those in the
-// caller's block.  Do not alter the size of this
-// current block, but return any remainder higher
-// order bits.  Zero size return block indicates all
-// bits were written.
+//------------------------------------------------------------------------|
+// Overwrite data bits at offset with those in the caller's block.  Do not
+// alter the size of this current block, but return any remainder higher
+// order bits.  Zero size return block indicates all bits were written.
 //
 // Before:
-//     data:   oTUVWXYZ    <- offset 3 shown
+//     data:   oTUVWXYZ    <- offset 3 shown intentionally
 //     _data:     ooABCDEF
 //
 // After:
 //     _data:     ooXYZDEF
 //     return:    ooooTUVW
 //
-//--52---------------------------------------------|
-BitBlock BitBlock::SetBits(const uint64_t data,
-                           const int8_t size,
-                           const int8_t offset)
+//------------------------------------------------------------------------|
+BitBlock BitBlock::SetBits(const uint64_t data, const int8_t size,
+		const int8_t offset)
 {
     // only true if caller data is larger
     int8_t setBits = _size - offset;
@@ -166,43 +145,43 @@ BitBlock BitBlock::SetBits(const uint64_t data,
                     size - setBits);
 }
    
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 uint64_t BitBlock::GetData() const
 {
     return _data;
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 int8_t BitBlock::GetSize() const
 { 
     return _size;
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 uint64_t BitBlock::GetAddr() const
 { 
     return _addr;
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 int8_t BitBlock::GetSpare() const
 {
     return (MAX_NUM_BITS - _size);
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 bool BitBlock::IsEmpty() const
 {
     return (_size <= 0);
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 bool BitBlock::IsFull() const
 {
     return (_size >= MAX_NUM_BITS);
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 //              _block      block
 // Before       +-+-+-+-+-+  +-+-+-+-+-+
 // Call         | | |A|B|C|  | |W|X|Y|Z|
@@ -213,9 +192,8 @@ bool BitBlock::IsFull() const
 //  | | | |A|B|  |C|W|X|Y|Z|      Call
 //  +-+-+-+-+-+  +-+-+-+-+-+
 //    
-//--52---------------------------------------------|
-BitBlock BitBlock::PushLow(const BitBlock &
-        block)
+//------------------------------------------------------------------------|
+BitBlock BitBlock::PushLow(const BitBlock & block)
 {
     // The number of bits we are able to keep
     // is the same as caller's spare bits.
@@ -225,8 +203,7 @@ BitBlock BitBlock::PushLow(const BitBlock &
     // size minus keepSize. Store any MSBs
     // that would have gotten shifted out in
     // the overflow return block.
-    BitBlock overFlow(_data >> keepSize,
-                      _size - keepSize);
+    BitBlock overFlow(_data >> keepSize, _size - keepSize);
 
     // Make some room for incoming bits
     // and adjust our size down by the
@@ -243,14 +220,13 @@ BitBlock BitBlock::PushLow(const BitBlock &
     return overFlow;
 }
 
-//--52---------------------------------------------|
-BitBlock BitBlock::PushLow(const uint64_t data,
-                           const int8_t size)
+//------------------------------------------------------------------------|
+BitBlock BitBlock::PushLow(const uint64_t data, const int8_t size)
 {
     return PushLow(BitBlock(data, size));
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 BitBlock BitBlock::PopLow(const int8_t size)
 {
     // Use our own data but the caller's size
@@ -258,8 +234,7 @@ BitBlock BitBlock::PopLow(const int8_t size)
     // only if there are enough bits
     // remaining. Otherwise return a short
     // block size.
-    BitBlock lowBits(_data, (_size > size) ?
-        size : _size);
+    BitBlock lowBits(_data, (_size > size) ? size : _size);
 
     // Now alter our own data by the caller's
     // size.  This is an easy way.
@@ -271,7 +246,7 @@ BitBlock BitBlock::PopLow(const int8_t size)
     return lowBits;
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 //              _block      block
 // Before       +-+-+-+-+-+  +-+-+-+-+-+
 // Call         | | |A|B|C|  | |W|X|Y|Z|
@@ -282,7 +257,7 @@ BitBlock BitBlock::PopLow(const int8_t size)
 //  | | | |B|C|  |W|X|Y|Z|A|      Call
 //  +-+-+-+-+-+  +-+-+-+-+-+
 //
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 BitBlock BitBlock::PushHigh(const BitBlock & block)
 {
     // The number of bits we are able to keep
@@ -309,14 +284,13 @@ BitBlock BitBlock::PushHigh(const BitBlock & block)
     return overFlow;
 }
 
-//--52---------------------------------------------|
-BitBlock BitBlock::PushHigh(const uint64_t data,
-                            const int8_t size)
+//------------------------------------------------------------------------|
+BitBlock BitBlock::PushHigh(const uint64_t data, const int8_t size)
 {
     return PushHigh(BitBlock(data, size));
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 BitBlock BitBlock::PopHigh(const int8_t size)
 {
     // Use our own data but the caller's size
@@ -324,11 +298,8 @@ BitBlock BitBlock::PopHigh(const int8_t size)
     // only if there are enough bits
     // remaining. Otherwise return a short
     // block size.
-    int8_t remaining = (_size > size) ?
-                       (_size - size) : 0;
-
-    BitBlock highBits(_data >> remaining,
-                      _size - remaining);
+    int8_t remaining = (_size > size) ? (_size - size) : 0;
+    BitBlock highBits(_data >> remaining, _size - remaining);
 
     // Now alter our own data by the caller's
     // size.  This is an easy way.
@@ -340,7 +311,7 @@ BitBlock BitBlock::PopHigh(const int8_t size)
     return highBits;
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 void BitBlock::SetAddr(uint64_t addr)
 {
     // Go ahead and set my own address.
@@ -359,16 +330,15 @@ void BitBlock::SetAddr(uint64_t addr)
     //}
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 //void BitBlock::SetNext(BitBlock* next)
 //{
 //    // pointer to next block
 //    _next = next;
 //}
 
-//--52---------------------------------------------|
-BitBlock & BitBlock::operator=(const
-        BitBlock & block)
+//------------------------------------------------------------------------|
+BitBlock & BitBlock::operator=(const BitBlock & block)
 {
     if (this != &block)
     {
@@ -379,7 +349,7 @@ BitBlock & BitBlock::operator=(const
     return *this;
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 BitBlock & BitBlock::operator=(const uint64_t data)
 {
     this->SetBlock(data, BitBlock::MAX_NUM_BITS);
@@ -387,21 +357,22 @@ BitBlock & BitBlock::operator=(const uint64_t data)
     return *this;
 }
 
-//--52---------------------------------------------|
+//------------------------------------------------------------------------|
 BitBlock & BitBlock::operator=(const uint32_t data)
 {
-    this->SetBlock((uint64_t) data,
-        sizeof(uint32_t) * BitBlock::BITS_PER_BYTE);
+    this->SetBlock((uint64_t) data, sizeof(uint32_t) *
+    		BitBlock::BITS_PER_BYTE);
     this->SetAddr(0);
     return *this;
 }
 
-//--52---------------------------------------------|
-ostream & operator<<(ostream & os,
-                     const BitBlock & block)
+//------------------------------------------------------------------------|
+ostream & operator<<(ostream & os, const BitBlock & block)
 {
     // Show all 4-bit hex nibbles as ASCII
     // chars atop their respective LSB.
+    os << endl;
+
     string line("hex: ");
     static const uint8_t NIBBLE_BITS = 4;
     int8_t shift = BitBlock::MAX_NUM_BITS -
@@ -431,8 +402,7 @@ ostream & operator<<(ostream & os,
     while (mask != 0)
     {
         if (spare == 0) { zero = '0'; }
-        line += (block.GetData() & mask) ?
-                 '1' : zero;
+        line += (block.GetData() & mask) ? '1' : zero;
         mask >>= 1;
         spare--;
     }
@@ -440,6 +410,8 @@ ostream & operator<<(ostream & os,
 
     // lastly show the size
     os << "size: " << (int16_t) block.GetSize();
+
+    return os;
 }
 
 }
