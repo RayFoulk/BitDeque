@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------|
-// Copyright (c) 2016 through 2018 by Raymond M. Foulk IV
+// Copyright (c) 2016-2018, 2022 by Raymond M. Foulk IV
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the
