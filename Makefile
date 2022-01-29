@@ -1,28 +1,53 @@
 PROJECT := BitDeque
-SOURCES := $(notdir $(shell find . -follow -name '*.cpp'))
-SRCDIRS := $(sort $(dir $(shell find . -follow -name '*.cpp')))
-OBJECTS := $(patsubst %.cpp,%.o,$(SOURCES))
-INCLUDE += $(patsubst %,-I%,$(SRCDIRS))
-VPATH   := $(SRCDIRS)
 
-CC      := g++
-BIN     := /usr/local/bin
-LIB     := /usr/local/lib
-CFLAGS  := $(INCLUDE) -Wall -ansi -pipe
+PROJ_SRCS := $(notdir $(shell find ./Source -follow -name '*.cpp'))
+PROJ_DIRS := $(sort $(dir $(shell find ./Source -follow -name '*.cpp')))
+PROJ_OBJS := $(patsubst %.cpp,%.o,$(PROJ_SRCS))
+PROJ_INCL += $(patsubst %,-I%,$(PROJ_DIRS))
+VPATH     := $(PROJ_DIRS)
+
+TEST_SRCS := $(notdir $(shell find ./Test -follow -name 'Test*.cpp'))
+TEST_DIRS := $(sort $(dir $(shell find ./Test -follow -name 'Test*.cpp')))
+TEST_OBJS := $(patsubst %.cpp,%.o,$(TEST_SRCS))
+TEST_INCL := $(patsubst %,-I%,$(TEST_DIRS))
+TEST_BINS := $(patsubst %.cpp,%.utest,$(TEST_SRCS))
+VPATH     += $(TEST_DIRS)
+
+STATIC_LIB := $(PROJECT).a
+SHARED_LIB := $(PROJECT).so
+
+CC := g++
+AR := ar
+LD := g++
 LDFLAGS := -lm -lc -lpthread
+CPPFLAGS := $(PROJ_INCL) -Wall -pipe -fomit-frame-pointer -fPIC
+CPPFLAGS_DEBUG := -O0 -g -fmax-errors=3
+# TODO: ENABLE LOG ONLY IN DEBUG/TEST
 
-all: CPPFLAGS += -O2 -fomit-frame-pointer
-all: CFLAGS += -O2 -fomit-frame-pointer
-all: $(PROJECT)
+.PHONY: all
+all: CPPFLAGS += -O2
+all: $(STATIC_LIB) $(SHARED_LIB)
 
-$(PROJECT): $(OBJECTS)
-	$(CC) $(CFLAGS) -o $(PROJECT) $(OBJECTS) $(LDFLAGS)
-	strip $(PROJECT)
+.PHONY: debug
+debug: CPPFLAGS += $(CPPFLAGS_DEBUG)
+debug: $(STATIC_LIB) $(SHARED_LIB)
 
-debug: CPPFLAGS += -O0 -g
-debug: CFLAGS += -O0 -g
-debug: $(OBJECTS)
-	$(CC) $(CFLAGS) -o $(PROJECT)_dbg $(OBJECTS) $(LDFLAGS)
+$(STATIC_LIB): $(PROJ_OBJS)
+	$(AR) rcs $(STATIC_LIB) $(PROJ_OBJS)
 
+$(SHARED_LIB): $(PROJ_OBJS)
+	$(LD) $(LDFLAGS) -shared -o $(SHARED_LIB) $(PROJ_OBJS)
+
+.PHONY: test
+test: CPPFLAGS += $(TEST_INCL) $(CPPFLAGS_DEBUG) -fprofile-arcs -ftest-coverage
+test: $(TEST_BINS)
+	for testbin in Test*utest; do ./$$testbin; done
+	# $(COV_REPORT)
+
+Test%.utest: Test%.o $(PROJ_OBJS)
+	$(CC) $(CPPFLAGS) -o $@ $< $(PROJ_OBJS) $(LDFLAGS)
+
+.PHONY: clean
 clean:
-	rm -f core *.o *.a *.log $(PROJECT) $(PROJECT)_dbg
+	rm -f core *.gcno *.gcda $(TEST_OBJS) $(TEST_BINS) \
+	$(PROJ_OBJS) $(STATIC_LIB) $(SHARED_LIB)
