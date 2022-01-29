@@ -31,94 +31,91 @@ int main(int argc, char *argv[])
     // Test BitBlock
     rmf::BitBlock block;
 
-    /*
+    // TEST 1
     while (!block.IsFull())
     {
         block.PushLow(1, 1);
-        block.Log();
+        LOG("block: " << block);
     }
 
     block.Clear();
-    block.Log();
+    LOG("block: " << block);
 
     while (!block.IsFull())
     {
         block.PushLow(2, 2);
-        block.Log();
+        LOG("block: " << block);
     }
 
     block.Clear();
-    block.Log();
+    LOG("block: " << block);
 
     while (!block.IsFull())
     {
         block.PushLow(1, 2);
-        block.Log();
+        LOG("block: " << block);
     }
 
     block.Clear();
-    block.Log();
+    LOG("block: " << block);
 
     rmf::BitBlock overFlow;
     int i = 0;
     while (!block.IsFull())
     {
         overFlow = block.PushLow(++i, 6);
-        block.Log();
-        overFlow.Log();
+        LOG("block: " << block);
+        LOG("overFlow: " << overFlow);
     }
 
     rmf::BitBlock lowBits;
     while (!block.IsEmpty())
     {
         lowBits = block.PopLow(5);
-        block.Log("block");
-        lowBits.Log("lowBits");
+        LOG("block: " << block);
+        LOG("lowBits: " << lowBits);
     }
-    */
 
-    /*
+    // TEST 2
     block.PushLow(0xF, 4);
-    block.Log("block");
+    LOG("block: " << block);
 
-    rmf::BitBlock lowBits = block.PopLow(5);
-    block.Log("block");
-    lowBits.Log("lowBits");
+    //rmf::BitBlock lowBits = block.PopLow(5);
+    lowBits = block.PopLow(5);
+    LOG("block: " << block);
+    LOG("lowBits: " << lowBits);
 
     block.PushLow(0x55, 5);
-    block.Log("block");
+    LOG("block: " << block);
 
     lowBits = block.PopLow(5);
-    block.Log("block");
-    lowBits.Log("lowBits");
-    */
+    LOG("block: " << block);
+    LOG("lowBits: " << lowBits);
 
-    /*
     // PUSHHIGH TEST
-    rmf::BitBlock overFlow;
+    //rmf::BitBlock overFlow;
     while (!block.IsFull())
     {
         //overFlow = block.PushHigh(0xAAAA, 15);
         overFlow = block.PushHigh(0x00FF, 15);
-        block.Log("block");
-        overFlow.Log("overflow");
+        LOG("block: " << block);
+        LOG("overFlow: " << overFlow);
     }
 
     rmf::BitBlock highBits;
     while (!block.IsEmpty())
     {
         highBits = block.PopHigh(5);
-        block.Log("block");
-        highBits.Log("highBits");
+        LOG("block: " << block);
+        LOG("highBits: " << highBits);
     }
-    */
 
     // POPHIGH CORRECTNESS TEST
-    /*
     block = 0xFF00FF00FF00FF00;
     LOG("block: " << block);
 
-    rmf::BitBlock highBits = block.PopHigh(5);
+    //rmf::BitBlock highBits = block.PopHigh(5);
+    highBits = block.PopHigh(5);
     LOG("block: " << block);
     LOG("highBits: " << highBits);
 
@@ -128,14 +125,13 @@ int main(int argc, char *argv[])
     highBits = block.PopHigh(5);
     LOG("block: " << block);
     LOG("highBits: " << highBits);
-    */
 
     //rmf::BitBlock lowBits;    
     //rmf::BitDeque bits;
 
     // MASK ALGORITHM TEST 32/64 BITS
 
-    /* for (int8_t size = 0; size < 64; size ++)
+    for (int8_t size = 0; size < 64; size ++)
     {
         // Make an AND mask from size and use
         // it to ensure unused part of data
@@ -151,7 +147,7 @@ int main(int argc, char *argv[])
         uint64_t mask = ((uint64_t) 1 << size) - 1;
         LOG("mask: " << std::hex <<
                mask << std::dec);
-    } */
+    }
 
     // SETBITS TEST
     
@@ -160,7 +156,6 @@ int main(int argc, char *argv[])
 
     block.SetBits(0xAA, 4, 0);
     LOG("block: " << block);
-
         
     return 0;
 
