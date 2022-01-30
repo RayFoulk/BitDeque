@@ -1,8 +1,11 @@
 PROJECT := BitDeque
 
-PROJ_SRCS := $(notdir $(shell find ./Source -follow -name '*.cpp'))
-PROJ_DIRS := $(sort $(dir $(shell find ./Source -follow -name '*.cpp')))
-PROJ_OBJS := $(patsubst %.cpp,%.o,$(PROJ_SRCS))
+SRCDIR := ./Source
+OBJDIR := ./Objects
+
+PROJ_SRCS := $(notdir $(shell find $(SRCDIR) -follow -name '*.cpp'))
+PROJ_DIRS := $(sort $(dir $(shell find $(SRCDIR) -follow -name '*.cpp')))
+PROJ_OBJS := $(patsubst %.cpp,$(OBJDIR)/%.o,$(PROJ_SRCS))
 PROJ_INCL += $(patsubst %,-I%,$(PROJ_DIRS))
 VPATH     := $(PROJ_DIRS)
 
@@ -32,6 +35,9 @@ all: $(STATIC_LIB) $(SHARED_LIB)
 debug: CPPFLAGS += $(CPPFLAGS_DEBUG)
 debug: $(STATIC_LIB) $(SHARED_LIB)
 
+$(OBJDIR)/%.o: %.cpp
+	$(CC) $(CPPFLAGS) -c -o $@ $<
+
 $(STATIC_LIB): $(PROJ_OBJS)
 	$(AR) rcs $(STATIC_LIB) $(PROJ_OBJS)
 
@@ -49,5 +55,5 @@ Test%.utest: Test%.o $(PROJ_OBJS)
 
 .PHONY: clean
 clean:
-	rm -f core *.gcno *.gcda $(TEST_OBJS) $(TEST_BINS) \
-	$(PROJ_OBJS) $(STATIC_LIB) $(SHARED_LIB)
+	rm -f core *.gcno *.gcda $(OBJDIR)/*.gcno $(OBJDIR)/*.gcda \
+	$(TEST_OBJS) $(TEST_BINS) $(PROJ_OBJS) $(STATIC_LIB) $(SHARED_LIB)
