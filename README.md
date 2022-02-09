@@ -13,12 +13,5 @@ This is a general utility class for use in other larger projects.  Essentially i
 - A universal assembler, with each machine type's opcodes defined in a human-readable parameter file.
 
 ## TODO
-Add built-in class serialization / deserialization to/from JSON (Not XML!)
-
-## Q&A
-- Why is your code wrapped at 52 characters?
-    - Because I developed this on my tiny mobile phone (yes, really).  Normally at my desktop I wrap lines at ~100 characters.
-- Why do you dislike XML?
-    - I actually do like some aspects of XML (portability, flexibility, ease of use, semi-human readable)
-    - However it has some drawbacks: information density is low by comparison, and it's not _that_ human-readable
-    
+- Add built-in class serialization / deserialization to/from JSON or YAML
+- Finish top level methods, unit tests, and code coverage

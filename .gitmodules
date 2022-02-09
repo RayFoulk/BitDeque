@@ -1,0 +1,3 @@
+[submodule "External/utest.h"]
+	path = External/utest.h
+	url = git@github.com:sheredom/utest.h.git
