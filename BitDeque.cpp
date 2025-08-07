@@ -62,20 +62,16 @@ BitBlock BitDeque::GetBits(const uint64_t addr, const int8_t size)
         return BitBlock(); // empty block
     }
     
+    // Calculate actual size to retrieve (don't go beyond end of deque)
+    int8_t actualSize = size;
     if (addr + size > _size)
     {
-        // Requested range extends beyond available data
-        // Return what we can up to the end
-        //return GetBits(addr, static_cast<int8_t>(_size - addr));
-
-        // FIXME: REPLACE THIS RECURSIVE CALL WITH A LITERAL
-        // BitBlock() IMPLEMENTATION, SINCE IT IS A SPECIAL CASE!!!
-        return BitBlock();
+        actualSize = static_cast<int8_t>(_size - addr);
     }
     
     BitBlock result;
     uint64_t currentAddr = 0;
-    int8_t remaining = size;
+    int8_t remaining = actualSize;
     
     // Find starting block
     size_t blockIndex = 0;
@@ -117,12 +113,35 @@ BitBlock BitDeque::GetBits(const uint64_t addr, const int8_t size)
         }
         else
         {
-            result.PushLow(blockBits);
+            // Cross-block boundary: combine with existing result
+            int8_t spareSpace = result.GetSpare();
+            if (spareSpace >= blockBits.GetSize())
+            {
+                // Can fit the entire block bits
+                result.PushLow(blockBits);
+            }
+            else if (spareSpace > 0)
+            {
+                // Take only what fits (partial)
+                BitBlock partial(blockBits.GetData(), spareSpace);
+                result.PushLow(partial);
+                break; // Result is now full
+            }
+            else
+            {
+                break; // Result is already full
+            }
         }
         
         remaining -= toTake;
         offset = 0; // For subsequent blocks, start at offset 0
         ++blockIndex;
+        
+        // Stop if we've filled the result to capacity
+        if (result.IsFull())
+        {
+            break;
+        }
     }
     
     return result;
