@@ -101,6 +101,7 @@ public:
 
     void Insert(const BitBlock & block, const uint64_t addr);
 
+    void Defragment(void);
 
 protected:
 
