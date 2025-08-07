@@ -51,59 +51,7 @@ void BitDeque::Clear()
 // from multiple internal BitBlocks if necessary
 BitBlock BitDeque::GetBits(const uint64_t addr)
 {
-    if (addr >= _size || _blocks.empty())
-    {
-        return BitBlock(); // empty block
-    }
-    
-    // Find the block containing this address
-    uint64_t currentAddr = 0;
-    size_t blockIndex = 0;
-    
-    for (blockIndex = 0; blockIndex < _blocks.size(); ++blockIndex)
-    {
-        uint64_t blockEnd = currentAddr + _blocks[blockIndex].GetSize();
-        if (addr >= currentAddr && addr < blockEnd)
-        {
-            break;
-        }
-        currentAddr = blockEnd;
-    }
-    
-    if (blockIndex >= _blocks.size())
-    {
-        return BitBlock(); // address not found
-    }
-    
-    // Get bits from the first block
-    int8_t offset = static_cast<int8_t>(addr - currentAddr);
-    BitBlock result = _blocks[blockIndex].GetBits(offset);
-    
-    // If the result isn't full, try to get more bits from subsequent blocks
-    // This creates a contiguous view across block boundaries
-    ++blockIndex;
-    while (blockIndex < _blocks.size() && !result.IsFull())
-    {
-        const BitBlock& nextBlock = _blocks[blockIndex];
-        int8_t spareSpace = result.GetSpare();
-        
-        if (spareSpace >= nextBlock.GetSize())
-        {
-            // Can fit the entire next block
-            result.PushLow(nextBlock);
-        }
-        else
-        {
-            // Take only what fits
-            BitBlock partial = nextBlock.GetBits(0);
-            partial.SetBlock(partial.GetData(), spareSpace);
-            result.PushLow(partial);
-            break; // Result is now full
-        }
-        ++blockIndex;
-    }
-
-    return result;
+    return GetBits(addr, BitBlock::MAX_NUM_BITS);
 }
 
 //------------------------------------------------------------------------|
@@ -118,7 +66,11 @@ BitBlock BitDeque::GetBits(const uint64_t addr, const int8_t size)
     {
         // Requested range extends beyond available data
         // Return what we can up to the end
-        return GetBits(addr, static_cast<int8_t>(_size - addr));
+        //return GetBits(addr, static_cast<int8_t>(_size - addr));
+
+        // FIXME: REPLACE THIS RECURSIVE CALL WITH A LITERAL
+        // BitBlock() IMPLEMENTATION, SINCE IT IS A SPECIAL CASE!!!
+        return BitBlock();
     }
     
     BitBlock result;

@@ -61,7 +61,7 @@ public:
     // overwrite  bits currently allocated.
     BitBlock SetBits(const BitBlock & block, const uint64_t addr);
     BitBlock SetBits(const uint64_t data, const int8_t size,
-    		const uint64_t addr);
+    		         const uint64_t addr);
 
     // LSB right-most bits are 'Back'.  This pushes
     // the caller's bits into the right end of the
