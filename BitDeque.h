@@ -54,7 +54,7 @@ public:
 
     // Get a chunk of bits from arbirary bit offset
     BitBlock GetBits(const uint64_t addr);
-    //BitBlock GetBits(const uint64_t addr, const uint64_t size);
+    BitBlock GetBits(const uint64_t addr, const int8_t size);
 
     // Replace (set) bits at bit offset.  This will
     // not alter the size of the block, but only

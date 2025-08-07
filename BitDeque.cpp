@@ -47,6 +47,8 @@ void BitDeque::Clear()
 
 //------------------------------------------------------------------------|
 // Get a chunk of bits from arbitrary bit offset
+// This version handles cross-block boundaries by assembling bits
+// from multiple internal BitBlocks if necessary
 BitBlock BitDeque::GetBits(const uint64_t addr)
 {
     if (addr >= _size || _blocks.empty())
@@ -54,33 +56,125 @@ BitBlock BitDeque::GetBits(const uint64_t addr)
         return BitBlock(); // empty block
     }
     
-    // FIXME: Concerned about how this will behave if GetBits() is
-    //   requested at an address that crosses BitBlock boundaries.
-    //   The returned BitBlock should be a contiguous composite of
-    //   whatever chunks of other internal BitBlocks is necessary. 
     // Find the block containing this address
     uint64_t currentAddr = 0;
-    for (auto& block : _blocks)
+    size_t blockIndex = 0;
+    
+    for (blockIndex = 0; blockIndex < _blocks.size(); ++blockIndex)
     {
-        if (addr >= currentAddr && addr < currentAddr + block.GetSize())
+        uint64_t blockEnd = currentAddr + _blocks[blockIndex].GetSize();
+        if (addr >= currentAddr && addr < blockEnd)
         {
-            // Address is within this block
-            int8_t offset = static_cast<int8_t>(addr - currentAddr);
-            return block.GetBits(offset);
+            break;
         }
-        currentAddr += block.GetSize();
+        currentAddr = blockEnd;
     }
     
-    return BitBlock(); // address not found
+    if (blockIndex >= _blocks.size())
+    {
+        return BitBlock(); // address not found
+    }
+    
+    // Get bits from the first block
+    int8_t offset = static_cast<int8_t>(addr - currentAddr);
+    BitBlock result = _blocks[blockIndex].GetBits(offset);
+    
+    // If the result isn't full, try to get more bits from subsequent blocks
+    // This creates a contiguous view across block boundaries
+    ++blockIndex;
+    while (blockIndex < _blocks.size() && !result.IsFull())
+    {
+        const BitBlock& nextBlock = _blocks[blockIndex];
+        int8_t spareSpace = result.GetSpare();
+        
+        if (spareSpace >= nextBlock.GetSize())
+        {
+            // Can fit the entire next block
+            result.PushLow(nextBlock);
+        }
+        else
+        {
+            // Take only what fits
+            BitBlock partial = nextBlock.GetBits(0);
+            partial.SetBlock(partial.GetData(), spareSpace);
+            result.PushLow(partial);
+            break; // Result is now full
+        }
+        ++blockIndex;
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------|
-//BitBlock BitDeque::GetBits(const uint64_t addr, const uint64_t size)
-// TODO: Considering the usefulness of a GetBits() overload
-//   that allows requesting up to a certain number of bits.
-//   May not be that useful since the user can do whatever they want
-//   with what they get from normal GetBits(), which should just
-//   be a copied chunk of bits.
+BitBlock BitDeque::GetBits(const uint64_t addr, const int8_t size)
+{
+    if (addr >= _size || _blocks.empty() || size <= 0)
+    {
+        return BitBlock(); // empty block
+    }
+    
+    if (addr + size > _size)
+    {
+        // Requested range extends beyond available data
+        // Return what we can up to the end
+        return GetBits(addr, static_cast<int8_t>(_size - addr));
+    }
+    
+    BitBlock result;
+    uint64_t currentAddr = 0;
+    int8_t remaining = size;
+    
+    // Find starting block
+    size_t blockIndex = 0;
+    for (blockIndex = 0; blockIndex < _blocks.size(); ++blockIndex)
+    {
+        uint64_t blockEnd = currentAddr + _blocks[blockIndex].GetSize();
+        if (addr >= currentAddr && addr < blockEnd)
+        {
+            break;
+        }
+        currentAddr = blockEnd;
+    }
+    
+    if (blockIndex >= _blocks.size())
+    {
+        return BitBlock(); // address not found
+    }
+    
+    // Extract the requested bits across blocks if necessary
+    int8_t offset = static_cast<int8_t>(addr - currentAddr);
+    
+    while (remaining > 0 && blockIndex < _blocks.size())
+    {
+        const BitBlock& currentBlock = _blocks[blockIndex];
+        int8_t availableInBlock = currentBlock.GetSize() - offset;
+        int8_t toTake = (remaining < availableInBlock) ? remaining : availableInBlock;
+        
+        // Get the bits we need from this block
+        BitBlock blockBits = currentBlock.GetBits(offset);
+        if (blockBits.GetSize() > toTake)
+        {
+            // Trim to exactly what we need
+            blockBits.SetBlock(blockBits.GetData(), toTake);
+        }
+        
+        if (result.IsEmpty())
+        {
+            result = blockBits;
+        }
+        else
+        {
+            result.PushLow(blockBits);
+        }
+        
+        remaining -= toTake;
+        offset = 0; // For subsequent blocks, start at offset 0
+        ++blockIndex;
+    }
+    
+    return result;
+}
 
 //------------------------------------------------------------------------|
 BitBlock BitDeque::SetBits(const BitBlock & block, const uint64_t addr)
@@ -424,7 +518,7 @@ void BitDeque::Insert(const BitBlock & block, const uint64_t addr)
         return;
     }
     
-    // FIXME: Implement insertion at arbitrary position
+    // TODO: Implement insertion at arbitrary position
     // This would involve:
     // 1. Finding the target block
     // 2. Potentially splitting it at the insertion point
