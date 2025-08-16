@@ -46,15 +46,15 @@ void BitDeque::Clear()
 }
 
 //------------------------------------------------------------------------|
-// Get a chunk of bits from arbitrary bit offset
-// This version handles cross-block boundaries by assembling bits
-// from multiple internal BitBlocks if necessary
 BitBlock BitDeque::GetBits(const uint64_t addr)
 {
     return GetBits(addr, BitBlock::MAX_NUM_BITS);
 }
 
 //------------------------------------------------------------------------|
+// Get a chunk of bits from arbitrary bit offset
+// This version handles cross-block boundaries by assembling bits
+// from multiple internal BitBlocks if necessary
 BitBlock BitDeque::GetBits(const uint64_t addr, const int8_t size)
 {
     if (addr >= _size || _blocks.empty() || size <= 0)
@@ -228,7 +228,6 @@ BitBlock BitDeque::PopLow(const int8_t size)
     }
     
     int8_t remaining = (size > _size) ? static_cast<int8_t>(_size) : size;
-    int8_t totalPopped = remaining;
     BitBlock result;
     
     while (remaining > 0 && !_blocks.empty())
@@ -274,7 +273,7 @@ BitBlock BitDeque::PopLow(const int8_t size)
             _size -= remaining;
             remaining = 0;
             
-            // Remove block if it became empty
+            // Remove empty blocks naturally
             if (lastBlock.IsEmpty())
             {
                 _blocks.pop_back();
@@ -387,7 +386,7 @@ BitBlock BitDeque::PopHigh(const int8_t size)
             _size -= remaining;
             remaining = 0;
             
-            // Remove block if it became empty
+            // Remove empty blocks naturally
             if (firstBlock.IsEmpty())
             {
                 _blocks.pop_front();
@@ -432,7 +431,7 @@ BitBlock BitDeque::Remove(const int8_t size, const uint64_t addr)
         return BitBlock(); // address not found
     }
     
-    // First, collect the bits we're removing
+    // First, collect the bits we're removing for return value
     BitBlock removedBits = GetBits(addr, actualSize);
     
     // Now perform the removal
@@ -495,8 +494,8 @@ BitBlock BitDeque::Remove(const int8_t size, const uint64_t addr)
         offsetInStartBlock = 0; // For subsequent blocks, start at offset 0
     }
     
-    // Defragment to clean up any gaps
-    Defragment();
+    // Only do lazy defragmentation around the affected area
+    LazyDefragment(startBlockIndex);
     
     return removedBits;
 }
@@ -612,8 +611,65 @@ void BitDeque::Insert(const BitBlock & block, const uint64_t addr)
     
     _size += block.GetSize();
     
-    // Defragment to optimize storage
-    Defragment();
+    // Only do lazy defragmentation around the insertion point
+    LazyDefragment(blockIndex);
+}
+
+//------------------------------------------------------------------------|
+void BitDeque::LazyDefragment(size_t aroundIndex)
+{
+    if (_blocks.size() <= 1)
+    {
+        return;
+    }
+    
+    // Only defragment adjacent blocks around the specified index
+    // This keeps the operation local and predictable
+    
+    // Check if we can combine with the previous block
+    if (aroundIndex > 0)
+    {
+        BitBlock& prev = _blocks[aroundIndex - 1];
+        BitBlock& current = _blocks[aroundIndex];
+        
+        if (prev.GetSpare() >= current.GetSize())
+        {
+            // Previous block can absorb the current block
+            prev.PushLow(current);
+            _blocks.erase(_blocks.begin() + aroundIndex);
+            aroundIndex--; // Adjust index since we removed a block
+        }
+        else if (current.GetSpare() >= prev.GetSize() && !prev.IsEmpty())
+        {
+            // Current block can absorb the previous block
+            current.PushHigh(prev);
+            _blocks.erase(_blocks.begin() + aroundIndex - 1);
+            aroundIndex--; // Adjust index since we removed a block
+        }
+    }
+    
+    // Check if we can combine with the next block
+    if (aroundIndex < _blocks.size() - 1)
+    {
+        BitBlock& current = _blocks[aroundIndex];
+        BitBlock& next = _blocks[aroundIndex + 1];
+        
+        if (current.GetSpare() >= next.GetSize())
+        {
+            // Current block can absorb the next block
+            current.PushLow(next);
+            _blocks.erase(_blocks.begin() + aroundIndex + 1);
+        }
+        else if (next.GetSpare() >= current.GetSize() && !current.IsEmpty())
+        {
+            // Next block can absorb the current block
+            next.PushHigh(current);
+            _blocks.erase(_blocks.begin() + aroundIndex);
+        }
+    }
+    
+    // Clean up any empty blocks that might have been created
+    RemoveEmptyBlocks();
 }
 
 //------------------------------------------------------------------------|
@@ -624,8 +680,10 @@ void BitDeque::Defragment()
         return; // Nothing to defragment
     }
     
-    // Multiple passes may be needed for optimal defragmentation
+    // Full defragmentation pass - combine blocks optimally
+    // This is more thorough but potentially expensive
     bool changed = true;
+    
     while (changed && _blocks.size() > 1)
     {
         changed = false;
@@ -651,7 +709,7 @@ void BitDeque::Defragment()
                 changed = true;
                 // Don't increment i, check the same position again
             }
-            else if (current.GetSpare() > 0)
+            else if (current.GetSpare() > 0 && next.GetSize() > 0)
             {
                 // Partial merge: move some bits from next to current
                 int8_t canMove = current.GetSpare();
@@ -659,16 +717,8 @@ void BitDeque::Defragment()
                 current.PushLow(moved);
                 changed = true;
                 
-                // If next block became empty, remove it
-                if (next.IsEmpty())
-                {
-                    _blocks.erase(_blocks.begin() + i + 1);
-                    // Don't increment i
-                }
-                else
-                {
-                    ++i;
-                }
+                // If next block became empty, it will be cleaned up below
+                ++i;
             }
             else
             {
@@ -677,6 +727,13 @@ void BitDeque::Defragment()
         }
     }
     
+    // Remove any empty blocks
+    RemoveEmptyBlocks();
+}
+
+//------------------------------------------------------------------------|
+void BitDeque::RemoveEmptyBlocks()
+{
     // Remove any empty blocks that might remain
     for (auto it = _blocks.begin(); it != _blocks.end(); )
     {
