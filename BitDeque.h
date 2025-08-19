@@ -101,6 +101,15 @@ public:
     // Insert bits at arbitrary bit offset
     void Insert(const BitBlock & block, const uint64_t addr);
 
+    // Append another BitDeque to the LSB end of this BitDeque
+    // Similar to PushLow but for entire BitDeques
+    void Append(const BitDeque& other);
+
+    // Split this BitDeque at the given bit address
+    // Returns the high-address portion, leaves low-address portion in this
+    // After split: this contains [0, addr), returned BitDeque contains [addr, size)
+    BitDeque Split(const uint64_t addr);
+
     // Lazy defragmentation - only consolidates adjacent blocks
     // around the specified index. Called automatically during
     // operations that might create fragmentation.

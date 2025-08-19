@@ -615,6 +615,175 @@ void BitDeque::Insert(const BitBlock & block, const uint64_t addr)
     LazyDefragment(blockIndex);
 }
 
+
+//------------------------------------------------------------------------|
+void BitDeque::Append(const BitDeque& other)
+{
+    if (other.GetSize() == 0)
+    {
+        return; // Nothing to append
+    }
+
+    if (_size == 0)
+    {
+        // If this deque is empty, just copy all blocks from other
+        _blocks = other._blocks;
+        _size = other._size;
+        return;
+    }
+
+    // Try to merge the first block of other with our last block
+    bool merged = false;
+    if (!_blocks.empty() && !other._blocks.empty())
+    {
+        BitBlock& ourLastBlock = _blocks.back();
+        const BitBlock& theirFirstBlock = other._blocks.front();
+
+        if (ourLastBlock.GetSpare() >= theirFirstBlock.GetSize())
+        {
+            // Our last block can absorb their first block completely
+            ourLastBlock.PushLow(theirFirstBlock);
+            _size += theirFirstBlock.GetSize();
+            merged = true;
+        }
+    }
+
+    // Add remaining blocks from other
+    size_t startIndex = merged ? 1 : 0;
+    for (size_t i = startIndex; i < other._blocks.size(); ++i)
+    {
+        _blocks.push_back(other._blocks[i]);
+        _size += other._blocks[i].GetSize();
+    }
+
+    // Lazy defragment around the junction point
+    if (!_blocks.empty() && _blocks.size() > 1)
+    {
+        // Find the junction point (where we started appending)
+        size_t junctionIndex = _blocks.size() - (other._blocks.size() - startIndex);
+        if (junctionIndex > 0)
+        {
+            LazyDefragment(junctionIndex - 1);
+        }
+    }
+}
+
+//------------------------------------------------------------------------|
+BitDeque BitDeque::Split(const uint64_t addr)
+{
+    BitDeque rightPart;
+
+    if (addr == 0)
+    {
+        // Split at beginning - right part gets everything, this becomes empty
+        rightPart._blocks = std::move(_blocks);
+        rightPart._size = _size;
+        _blocks.clear();
+        _size = 0;
+        return rightPart;
+    }
+
+    if (addr >= _size)
+    {
+        // Split beyond end - this unchanged, right part is empty
+        return rightPart; // Already empty
+    }
+
+    // Find the block containing the split address
+    uint64_t currentAddr = 0;
+    size_t splitBlockIndex = 0;
+
+    for (splitBlockIndex = 0; splitBlockIndex < _blocks.size(); ++splitBlockIndex)
+    {
+        uint64_t blockEnd = currentAddr + _blocks[splitBlockIndex].GetSize();
+        if (addr >= currentAddr && addr < blockEnd)
+        {
+            break; // Split address is within this block
+        }
+        if (addr == blockEnd)
+        {
+            // Split exactly at block boundary
+            splitBlockIndex++; // Split after this block
+            break;
+        }
+        currentAddr = blockEnd;
+    }
+
+    if (splitBlockIndex >= _blocks.size())
+    {
+        // This shouldn't happen given our bounds check above
+        return rightPart; // Return empty right part
+    }
+
+    // Handle the split
+    if (addr == currentAddr)
+    {
+        // Split exactly at block boundary - no block splitting needed
+        // Move blocks [splitBlockIndex, end) to right part
+        for (size_t i = splitBlockIndex; i < _blocks.size(); ++i)
+        {
+            rightPart._blocks.push_back(_blocks[i]);
+            rightPart._size += _blocks[i].GetSize();
+        }
+
+        // Remove those blocks from this deque
+        _blocks.erase(_blocks.begin() + splitBlockIndex, _blocks.end());
+        _size = currentAddr; // Size is now up to the split point
+    }
+    else
+    {
+        // Split is within a block - need to split the block
+        BitBlock& splitBlock = _blocks[splitBlockIndex];
+        int8_t offsetInBlock = static_cast<int8_t>(addr - currentAddr);
+
+        // Create left and right parts of the split block
+        BitBlock leftPart = splitBlock.GetBits(0);
+        leftPart.SetBlock(leftPart.GetData(), offsetInBlock);
+
+        BitBlock rightBlockPart = splitBlock.GetBits(offsetInBlock);
+
+        // Replace the split block with its left part in this deque
+        _blocks[splitBlockIndex] = leftPart;
+
+        // Add the right part of the split block to the right deque (if not empty)
+        if (!rightBlockPart.IsEmpty())
+        {
+            rightPart._blocks.push_back(rightBlockPart);
+            rightPart._size += rightBlockPart.GetSize();
+        }
+
+        // Move all blocks after the split block to the right deque
+        for (size_t i = splitBlockIndex + 1; i < _blocks.size(); ++i)
+        {
+            rightPart._blocks.push_back(_blocks[i]);
+            rightPart._size += _blocks[i].GetSize();
+        }
+
+        // Remove those blocks from this deque
+        _blocks.erase(_blocks.begin() + splitBlockIndex + 1, _blocks.end());
+
+        // Update this deque's size
+        _size = addr;
+    }
+
+    // Clean up any empty blocks and do light defragmentation
+    RemoveEmptyBlocks();
+    rightPart.RemoveEmptyBlocks();
+
+    // Light defragmentation around the split points
+    if (!_blocks.empty() && splitBlockIndex > 0 && splitBlockIndex < _blocks.size())
+    {
+        LazyDefragment(splitBlockIndex - 1);
+    }
+
+    if (!rightPart._blocks.empty() && rightPart._blocks.size() > 1)
+    {
+        rightPart.LazyDefragment(0);
+    }
+
+    return rightPart;
+}
+
 //------------------------------------------------------------------------|
 void BitDeque::LazyDefragment(size_t aroundIndex)
 {
